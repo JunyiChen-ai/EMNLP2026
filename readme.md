@@ -1,4 +1,4 @@
-# HVGuard
+# HVGuard: Utilizing Multimodal Large Language Models for Hateful Video Detection
 
 ![Framework](framework_img.png)
 
@@ -68,3 +68,4 @@ python text_embedding.py
 ```
 
 6. Train and predict(same as Quick Start)
+
