@@ -1,5 +1,5 @@
 # HVGuard: Utilizing Multimodal Large Language Models for Hateful Video Detection
-
+🎉🎉Our paper has been accepted to EMNLP 2025🎉🎉
 ![Framework](framework_img.png)
 
 HVGuard is a multimodal content safety framework that leverages **text (BERT)**, **vision (ViT)**, and **audio (Wav2Vec)** embeddings, along with reasoning from large language models (LLMs). The extracted multimodal features are cached and reused during training, enabling efficient experimentation and reproducibility.  
@@ -83,3 +83,4 @@ If you find this repository or our paper useful for your research, please consid
   pages={9004--9017},
   year={2025}
 }
+
