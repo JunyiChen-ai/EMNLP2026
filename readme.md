@@ -1,4 +1,5 @@
 # HVGuard: Utilizing Multimodal Large Language Models for Hateful Video Detection
+
 🎉🎉Our paper has been accepted to EMNLP 2025🎉🎉
 ![Framework](framework_img.png)
 
@@ -83,4 +84,5 @@ If you find this repository or our paper useful for your research, please consid
   pages={9004--9017},
   year={2025}
 }
+
 
