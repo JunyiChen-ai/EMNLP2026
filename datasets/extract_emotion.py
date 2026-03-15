@@ -1,8 +1,8 @@
 import os
 import json
+import re
 from funasr import AutoModel
 from funasr.utils.postprocess_utils import rich_transcription_postprocess
-import csv
 
 # Extract audio transcripts and prosodic emotions (Fun-ASR)
 def load_model(model_dir, device="cuda:0"):
@@ -33,56 +33,42 @@ def extract_emotion(result):
     emotions = []
     for item in result:
         text = item.get('text', '')
-        emotion = None
-        for token in text.split('<|'):
-            if token.endswith('|>') and token.isupper():
-                emotion = token[:-2]
-                break
+        matches = re.findall(r"<\|([A-Z_]+)\|>", text)
+        filtered = [token for token in matches if token != "EMO_UNKNOWN"]
+        deduped = list(dict.fromkeys(filtered))
+        emotion = ";".join(deduped)
         emotions.append(emotion)
     return emotions
 
-def process_audio_folder(model, folder_path, output_json, title_path, label_path, frames_path):
+def process_audio_folder(model, folder_path, output_json, annotation_path, frames_path):
     wav_files = [f for f in os.listdir(folder_path) if f.lower().endswith(".wav")]
+    with open(annotation_path, 'r', encoding='utf-8') as json_file:
+        annotation_data = json.load(json_file)
+
+    metadata = {
+        item["Video_ID"]: item for item in annotation_data if item.get("Video_ID")
+    }
     results = []
 
-    if os.path.exists(output_json):
-        with open(output_json, 'r', encoding='utf-8') as json_file:
-            results = json.load(json_file)
-    else:
-        with open(output_json, 'w', encoding='utf-8') as json_file:
-            json.dump([], json_file, ensure_ascii=False, indent=4)
+    for wav_file in wav_files:
+        audio_path = os.path.join(folder_path, wav_file)
+        video_id = os.path.splitext(wav_file)[0]
+        if video_id not in metadata:
+            print(f"Skipping {video_id}: missing in annotation(new).json")
+            continue
 
-    with open(title_path, 'r', encoding='utf-8') as json_file:
-        json_data = json.load(json_file)
-    
-    with open(label_path, 'r', encoding='utf-8') as video_file:
-        label_reader = csv.DictReader(video_file, delimiter='\t')
-        label_data = {row['Video_ID']: row['Majority_Voting'] for row in label_reader}
-
-        for wav_file in wav_files:
-            audio_path = os.path.join(folder_path, wav_file)
-            video_id = os.path.splitext(wav_file)[0]
-            print(f"Processing {video_id}...")
-            res = recognize_speech(model, audio_path)
-            emotions = extract_emotion(res)
-            transcript = rich_transcription_postprocess(res[0]["text"])
-            emotion = emotions[0] if emotions else "Unknown"
-            title = json_data[video_id]['title']
-            path1 = frames_path + video_id
-            label = label_data[video_id]
-
-            results.append({
-                "Video_ID": video_id,
-                "Title": title,
-                "Transcript": transcript,
-                "Emotion": emotion,
-                "Frames_path": path1,
-                "Audio_path": audio_path,
-                "Frames_description": "",
-                "Text_description": "",
-                "Mix_description": "",
-                "Label":label
-            })
+        print(f"Processing {video_id}...")
+        res = recognize_speech(model, audio_path)
+        emotions = extract_emotion(res)
+        transcript = rich_transcription_postprocess(res[0]["text"])
+        emotion = emotions[0] if emotions and emotions[0] else "Unknown"
+        source_item = metadata[video_id]
+        result_item = dict(source_item)
+        result_item["Transcript"] = transcript
+        result_item["Emotion"] = emotion
+        result_item["Frames_path"] = os.path.join(frames_path, video_id)
+        result_item["Audio_path"] = audio_path
+        results.append(result_item)
 
     with open(output_json, 'w', encoding='utf-8') as json_file:
         json.dump(results, json_file, ensure_ascii=False, indent=4)
@@ -99,19 +85,15 @@ def parse_args():
 
 def main():
     model = "FunAudioLLM/SenseVoiceSmall"
-    base_path = f'./HateMM' # (Multihateclip, HateMM)
     model = load_model(model)
-    target = ["valid", "test", "train"]
 
     args = parse_args()
-    base_path = args.input_folder
-    for i in target:
-        folder_path = base_path + "audios/" + i
-        output_json = base_path + "annotation(new)"  + ".json"
-        title_path = base_path + "text.json"
-        label_path = base_path + "annotation/" + i + ".tsv"
-        frames_path = base_path +  "frames/" + i + "/"
-        process_audio_folder(model, folder_path, output_json, title_path, label_path, frames_path)
+    base_path = os.path.abspath(args.input_folder)
+    folder_path = os.path.join(base_path, "audios")
+    output_json = os.path.join(base_path, "annotation(re).json")
+    annotation_path = os.path.join(base_path, "annotation(new).json")
+    frames_path = os.path.join(base_path, "frames")
+    process_audio_folder(model, folder_path, output_json, annotation_path, frames_path)
     print(f"Emotion analysis results saved to {output_json}")
 
 if __name__ == "__main__":

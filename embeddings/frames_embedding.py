@@ -1,5 +1,6 @@
 import os
 import json
+import argparse
 import torch
 from PIL import Image
 import torch.nn as nn
@@ -74,7 +75,19 @@ def process_dataset(json_path, vit_model, feature_extractor, save_path):
     print(f"All features saved to {save_path}")
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Extract frame embeddings")
+    parser.add_argument("--json", required=True, help="Input data.json path")
+    parser.add_argument("--out", required=True, help="Output .pth path")
+    return parser.parse_args()
+
+
 def main():
-    json_file = ""
-    output_file = ""
+    args = parse_args()
+    json_file = args.json
+    output_file = args.out
     process_dataset(json_file, vit_model, feature_extractor, output_file)
+
+
+if __name__ == "__main__":
+    main()

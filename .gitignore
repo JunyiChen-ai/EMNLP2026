@@ -1,0 +1,63 @@
+# Archived/deprecated code
+archive/
+
+# Large binary files
+*.pth
+*.pth.bk
+*.wav
+*.mp4
+*.webm
+*.avi
+*.mkv
+*.jpg
+*.png
+
+# Video directories
+datasets/*/video/
+datasets/*/videos/
+datasets/*/videos_flat/
+datasets/HateMM/video/
+
+# Audio directories
+datasets/*/audios/
+datasets/HateMM/audios/
+
+# Frame/quad image directories
+datasets/*/frames/
+datasets/*/quad/
+datasets/HateMM/frames/
+datasets/HateMM/quad/
+
+# LLM generation data (large JSON)
+datasets/HateMM/appraise_v*_data.json
+datasets/HateMM/data.json
+datasets/HateMM/data\ (base).json
+
+# Embedding binary files (keep .py scripts)
+embeddings/**/*.pth
+embeddings/**/*.pth.bk
+embeddings/HateMM/archive/
+embeddings/HateMM/backup_best/
+
+# Model checkpoints
+saved_models/
+models/
+
+# CREMA repo (cloned dependency)
+CREMA/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment
+.env
+*.egg-info/
+
+# Logs
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db

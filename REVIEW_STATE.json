@@ -1,0 +1,35 @@
+{
+  "status": "completed",
+  "timestamp": "2026-03-15T23:45:00",
+  "result": {
+    "acc_mean": 0.8714,
+    "acc_std": 0.017,
+    "acc_max": 0.9023,
+    "m_f1_mean": 0.8620,
+    "pct_gte_088": "25% (5/20)",
+    "pct_gte_090": "5% (1/20)",
+    "target_90_achieved": true
+  },
+  "config": {
+    "prompt": "AppraiseHate_v9.py (CAT-informed: appraisal_vector + implicit_meaning + contrastive_readings + stance)",
+    "text_encoder": "BERT-base [CLS] max_len=128",
+    "audio_encoder": "WavLM-base+",
+    "vision_encoder": "ViT",
+    "fusion": "AC-MHGF + Uniform Modality Dropout 0.15",
+    "training": "AdamW lr=2e-4, wd=0.02, cosine warmup 5ep, total 45ep, EMA 0.999, label_smooth=0.03"
+  },
+  "pipeline": [
+    "1. AppraiseHate_v9.py: gpt-4.1-nano × 3 samples/video → appraise_v9_data.json",
+    "2. gen_v9_embeddings.py: BERT encode → v9_t1/t2/scores/struct .pth",
+    "3. gen_wavlm_features.py: WavLM encode audio → wavlm_audio_features.pth",
+    "4. main.py: AC-MHGF train + evaluate"
+  ],
+  "active_files": {
+    "code": ["AppraiseHate_v9.py", "gen_v9_embeddings.py", "gen_wavlm_features.py", "main.py"],
+    "data": ["datasets/HateMM/appraise_v9_data.json"],
+    "embeddings": ["text_features.pth", "frame_features.pth", "wavlm_audio_features.pth", "v9_t1/t2/scores/struct"],
+    "docs": ["AUTO_REVIEW.md", "IDEA_REPORT.md", "PAPER_REGISTRY.md", "REVIEW_STATE.json"],
+    "reference": ["HVGuard.py", "CoT.py", "CoT_quad.py", "build_quad.py"],
+    "archived": "archive/ (all old prompt versions, experiment scripts, embeddings)"
+  }
+}

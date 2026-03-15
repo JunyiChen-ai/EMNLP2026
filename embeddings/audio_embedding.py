@@ -1,4 +1,5 @@
 from transformers import Wav2Vec2Model, Wav2Vec2Processor
+import argparse
 import torch
 import librosa
 from torch import nn
@@ -83,9 +84,17 @@ def save_features_to_pth(features, output_file):
     print(f"Features saved to {output_file}")
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Extract audio embeddings")
+    parser.add_argument("--json", required=True, help="Input data.json path")
+    parser.add_argument("--out", required=True, help="Output .pth path")
+    return parser.parse_args()
+
+
 def main():
-    json_file = ""
-    output_file = ""
+    args = parse_args()
+    json_file = args.json
+    output_file = args.out
 
     model = Wav2Vec_Model(audio_model, device)
     features = process_audio_folder(json_file, model)
