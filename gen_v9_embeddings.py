@@ -1,5 +1,5 @@
 """Generate v9 embeddings: same as v5 + stance features."""
-import json, sys, torch, numpy as np
+import json, sys, os, torch, numpy as np
 from collections import Counter
 sys.path.insert(0, "./embeddings")
 from text_embedding import Text_Model
@@ -39,8 +39,22 @@ def extract_struct(samples):
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset_name", type=str, default="HateMM", choices=["HateMM", "Multihateclip"])
+    parser.add_argument("--language", type=str, default="English", choices=["English", "Chinese"])
+    args = parser.parse_args()
+
+    if args.dataset_name == "HateMM":
+        data_path = "./datasets/HateMM/appraise_v9_data.json"
+        emb_dir = "./embeddings/HateMM"
+    else:
+        data_path = f"./datasets/Multihateclip/{args.language}/appraise_v9_data.json"
+        emb_dir = f"./embeddings/Multihateclip/{args.language}"
+    os.makedirs(emb_dir, exist_ok=True)
+
     model = Text_Model()
-    with open("./datasets/HateMM/appraise_v9_data.json") as f:
+    with open(data_path) as f:
         data = json.load(f)
 
     t1_features, t2_features, score_features, struct_features = {}, {}, {}, {}
@@ -70,10 +84,10 @@ def main():
         if (i + 1) % 200 == 0:
             print(f"Processed {i+1}/{len(data)}")
 
-    torch.save(t1_features, "./embeddings/HateMM/v9_t1_features.pth")
-    torch.save(t2_features, "./embeddings/HateMM/v9_t2_features.pth")
-    torch.save(score_features, "./embeddings/HateMM/v9_scores.pth")
-    torch.save(struct_features, "./embeddings/HateMM/v9_struct_features.pth")
+    torch.save(t1_features, f"{emb_dir}/v9_t1_features.pth")
+    torch.save(t2_features, f"{emb_dir}/v9_t2_features.pth")
+    torch.save(score_features, f"{emb_dir}/v9_scores.pth")
+    torch.save(struct_features, f"{emb_dir}/v9_struct_features.pth")
     sd = struct_features[list(struct_features.keys())[0]].shape[0]
     print(f"Saved: T1={len(t1_features)}, T2={len(t2_features)}, scores={len(score_features)}, struct(dim={sd})={len(struct_features)}")
 

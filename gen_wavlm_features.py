@@ -10,12 +10,27 @@ MODEL_NAME = "microsoft/wavlm-base-plus"
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset_name", type=str, default="HateMM", choices=["HateMM", "Multihateclip"])
+    parser.add_argument("--language", type=str, default="English", choices=["English", "Chinese"])
+    args = parser.parse_args()
+
+    if args.dataset_name == "HateMM":
+        audio_dir = "./datasets/HateMM/audios"
+        ann_path = "./datasets/HateMM/annotation(re).json"
+        out_path = "./embeddings/HateMM/wavlm_audio_features.pth"
+    else:
+        audio_dir = f"./datasets/Multihateclip/{args.language}/audios"
+        ann_path = f"./datasets/Multihateclip/{args.language}/annotation(new).json"
+        out_path = f"./embeddings/Multihateclip/{args.language}/wavlm_audio_features.pth"
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+
     feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_NAME)
     model = AutoModel.from_pretrained(MODEL_NAME).to(device).eval()
     print(f"WavLM: {sum(p.numel() for p in model.parameters())/1e6:.0f}M params")
 
-    audio_dir = "./datasets/HateMM/audios"
-    with open("./datasets/HateMM/annotation(re).json") as f:
+    with open(ann_path) as f:
         data = json.load(f)
 
     features = {}
@@ -57,7 +72,7 @@ def main():
         if (i + 1) % 100 == 0:
             print(f"Processed {i+1}/{len(data)}")
 
-    torch.save(features, "./embeddings/HateMM/wavlm_audio_features.pth")
+    torch.save(features, out_path)
     dim = features[list(features.keys())[0]].shape
     print(f"Saved: {len(features)} videos, dim={dim}")
 

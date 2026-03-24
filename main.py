@@ -112,6 +112,7 @@ class AC_MHGF(nn.Module):
         num_heads=4,
         input_dim=768,
         hidden_dim=192,
+        num_classes=2,
         score_dim=7,
         struct_dim=36,
         dropout=0.15,
@@ -171,7 +172,7 @@ class AC_MHGF(nn.Module):
             nn.Linear(256, 64),
             nn.GELU(),
             nn.Dropout(dropout * 0.5),
-            nn.Linear(64, 2),
+            nn.Linear(64, num_classes),
         )
 
     def forward(self, batch, training=False):
@@ -239,7 +240,7 @@ def load_split_ids(split_dir):
     return split_ids
 
 
-def evaluate(model, loader):
+def evaluate(model, loader, num_classes=2):
     model.eval()
     all_preds, all_labels = [], []
     with torch.no_grad():
@@ -250,14 +251,14 @@ def evaluate(model, loader):
             all_labels.extend(batch["label"].cpu().numpy())
     acc = accuracy_score(all_labels, all_preds)
     m_f1 = f1_score(all_labels, all_preds, average="macro", zero_division=0)
-    h_f1 = f1_score(all_labels, all_preds, pos_label=1, zero_division=0)
-    n_f1 = f1_score(all_labels, all_preds, pos_label=0, zero_division=0)
-    h_p = precision_score(all_labels, all_preds, pos_label=1, zero_division=0)
-    h_r = recall_score(all_labels, all_preds, pos_label=1, zero_division=0)
-    return {
-        "acc": acc, "m_f1": m_f1, "h_f1": h_f1, "n_f1": n_f1,
-        "h_p": h_p, "h_r": h_r,
-    }
+    w_f1 = f1_score(all_labels, all_preds, average="weighted", zero_division=0)
+    result = {"acc": acc, "m_f1": m_f1, "w_f1": w_f1}
+    # Per-class metrics
+    for c in range(num_classes):
+        result[f"f1_c{c}"] = f1_score(all_labels, all_preds, pos_label=c, zero_division=0, average="binary") if num_classes == 2 else f1_score((np.array(all_labels) == c).astype(int), (np.array(all_preds) == c).astype(int), zero_division=0)
+        result[f"p_c{c}"] = precision_score((np.array(all_labels) == c).astype(int), (np.array(all_preds) == c).astype(int), zero_division=0)
+        result[f"r_c{c}"] = recall_score((np.array(all_labels) == c).astype(int), (np.array(all_preds) == c).astype(int), zero_division=0)
+    return result
 
 
 # ============================================================
@@ -266,6 +267,9 @@ def evaluate(model, loader):
 
 def main():
     parser = argparse.ArgumentParser(description="AppraiseHate: Train and Evaluate")
+    parser.add_argument("--dataset_name", type=str, default="HateMM", choices=["HateMM", "Multihateclip"])
+    parser.add_argument("--language", type=str, default="English", choices=["English", "Chinese"])
+    parser.add_argument("--num_classes", type=int, default=2, choices=[2, 3])
     parser.add_argument("--num_runs", type=int, default=20, help="Number of runs with different seeds")
     parser.add_argument("--epochs", type=int, default=45)
     parser.add_argument("--batch_size", type=int, default=32)
@@ -281,22 +285,36 @@ def main():
     logger.info(f"Config: {vars(args)}")
     logger.info(f"Device: {device}")
 
+    # Dataset paths
+    if args.dataset_name == "HateMM":
+        emb_dir = "./embeddings/HateMM"
+        ann_path = "./datasets/HateMM/annotation(new).json"
+        split_dir = "./datasets/HateMM/splits"
+        label_map = {"Non Hate": 0, "Hate": 1}
+    else:
+        emb_dir = f"./embeddings/Multihateclip/{args.language}"
+        ann_path = f"./datasets/Multihateclip/{args.language}/annotation(new).json"
+        split_dir = f"./datasets/Multihateclip/{args.language}/splits"
+        if args.num_classes == 2:
+            label_map = {"Normal": 0, "Offensive": 1, "Hateful": 1}
+        else:
+            label_map = {"Normal": 0, "Offensive": 1, "Hateful": 2}
+
     # Load data
-    logger.info("Loading features...")
+    logger.info(f"Loading features from {emb_dir}...")
     features = {
-        "text": torch.load("./embeddings/HateMM/text_features.pth", map_location="cpu"),
-        "audio": torch.load("./embeddings/HateMM/wavlm_audio_features.pth", map_location="cpu"),
-        "frame": torch.load("./embeddings/HateMM/frame_features.pth", map_location="cpu"),
-        "t1": torch.load("./embeddings/HateMM/v9_t1_features.pth", map_location="cpu"),
-        "t2": torch.load("./embeddings/HateMM/v9_t2_features.pth", map_location="cpu"),
-        "scores": torch.load("./embeddings/HateMM/v9_scores.pth", map_location="cpu"),
-        "struct": torch.load("./embeddings/HateMM/v9_struct_features.pth", map_location="cpu"),
+        "text": torch.load(f"{emb_dir}/text_features.pth", map_location="cpu"),
+        "audio": torch.load(f"{emb_dir}/wavlm_audio_features.pth", map_location="cpu"),
+        "frame": torch.load(f"{emb_dir}/frame_features.pth", map_location="cpu"),
+        "t1": torch.load(f"{emb_dir}/v9_t1_features.pth", map_location="cpu"),
+        "t2": torch.load(f"{emb_dir}/v9_t2_features.pth", map_location="cpu"),
+        "scores": torch.load(f"{emb_dir}/v9_scores.pth", map_location="cpu"),
+        "struct": torch.load(f"{emb_dir}/v9_struct_features.pth", map_location="cpu"),
     }
-    with open("./datasets/HateMM/annotation(new).json") as f:
+    with open(ann_path) as f:
         features["labels"] = {item["Video_ID"]: item for item in json.load(f)}
 
-    label_map = {"Non Hate": 0, "Hate": 1}
-    split_ids = load_split_ids("./datasets/HateMM/splits")
+    split_ids = load_split_ids(split_dir)
 
     # Filter to common video IDs
     feat_keys = [k for k in features if k != "labels"]
@@ -332,6 +350,7 @@ def main():
         # Model
         model = AC_MHGF(
             struct_dim=struct_dim,
+            num_classes=args.num_classes,
             modality_dropout=args.modality_dropout,
         ).to(device)
         ema_model = copy.deepcopy(model)
@@ -365,23 +384,23 @@ def main():
                         ep.data.mul_(args.ema_decay).add_(p.data, alpha=1 - args.ema_decay)
 
             # Validation
-            val_metrics = evaluate(ema_model, val_loader)
+            val_metrics = evaluate(ema_model, val_loader, args.num_classes)
             if val_metrics["acc"] > best_val_acc:
                 best_val_acc = val_metrics["acc"]
                 best_state = {k: v.clone() for k, v in ema_model.state_dict().items()}
 
         # Test
         ema_model.load_state_dict(best_state)
-        test_metrics = evaluate(ema_model, test_loader)
+        test_metrics = evaluate(ema_model, test_loader, args.num_classes)
         all_results.append(test_metrics)
 
+        per_class_str = " ".join(f"F1_c{c}={test_metrics[f'f1_c{c}']:.4f}" for c in range(args.num_classes))
         marker = " ***" if test_metrics["acc"] >= 0.90 else (" **" if test_metrics["acc"] >= 0.88 else "")
         logger.info(
             f"Run {run_idx + 1}/{args.num_runs}: "
             f"Acc={test_metrics['acc']:.4f} "
             f"M-F1={test_metrics['m_f1']:.4f} "
-            f"H-F1={test_metrics['h_f1']:.4f} "
-            f"N-F1={test_metrics['n_f1']:.4f}"
+            f"{per_class_str}"
             f"{marker}"
         )
 
@@ -390,9 +409,10 @@ def main():
     logger.info("=" * 70)
     logger.info("SUMMARY")
     logger.info("=" * 70)
-    for key in ["acc", "m_f1", "h_f1", "n_f1", "h_p", "h_r"]:
+    summary_keys = ["acc", "m_f1", "w_f1"] + [f"f1_c{c}" for c in range(args.num_classes)]
+    for key in summary_keys:
         vals = [r[key] for r in all_results]
-        logger.info(f"  {key:>6}: {np.mean(vals):.4f} ± {np.std(vals):.4f} (max={np.max(vals):.4f})")
+        logger.info(f"  {key:>8}: {np.mean(vals):.4f} ± {np.std(vals):.4f} (max={np.max(vals):.4f})")
     accs = [r["acc"] for r in all_results]
     logger.info(f"  >=0.88: {sum(1 for a in accs if a >= 0.88)}/{args.num_runs}")
     logger.info(f"  >=0.89: {sum(1 for a in accs if a >= 0.89)}/{args.num_runs}")

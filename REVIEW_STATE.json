@@ -1,35 +1,52 @@
 {
-  "status": "completed",
-  "timestamp": "2026-03-15T23:45:00",
-  "result": {
-    "acc_mean": 0.8714,
-    "acc_std": 0.017,
-    "acc_max": 0.9023,
-    "m_f1_mean": 0.8620,
-    "pct_gte_088": "25% (5/20)",
-    "pct_gte_090": "5% (1/20)",
-    "target_90_achieved": true
+  "round": "v13_pivot",
+  "status": "in_progress",
+  "timestamp": "2026-03-20T16:00:00",
+
+  "pivot_reason": "CAT as main contribution was too thin — our CAT-guided outputs (relational meaning, alternative appraisals) are essentially the same as HVGuard's implicit meaning and RAMF's adversarial reasoning. GPT integrity test confirmed: removing 'CAT' from paper wouldn't change the method.",
+
+  "new_direction": "Perception-to-Cognition (P2C) paradigm, inspired by Vad-R1 (NeurIPS 2025). Reframes hate detection as a staged cognitive process rather than describe-then-judge.",
+
+  "v13_pipeline": {
+    "LLM": "gpt-5.4-nano, single call per video, P2C-CoT structured reasoning",
+    "Call_structure": "4-step for hateful (scene→evidence→target/intent→harm/norm), 2-step for non-hateful (scene→explanation)",
+    "Output_fields": "6 tagged fields (which, what, target, where, why, how), unified across hateful/non-hateful",
+    "Embeddings": "perception (step1+step2 BERT), cognition (step3+step4 BERT), answer (full answer BERT)",
+    "Fusion": "6 modalities (text+audio+frame+perception+cognition+answer) + 1d struct, multi-head gated routing",
+    "Retrieval": "inference-time whitened kNN (same as v12)"
   },
-  "config": {
-    "prompt": "AppraiseHate_v9.py (CAT-informed: appraisal_vector + implicit_meaning + contrastive_readings + stance)",
-    "text_encoder": "BERT-base [CLS] max_len=128",
-    "audio_encoder": "WavLM-base+",
-    "vision_encoder": "ViT",
-    "fusion": "AC-MHGF + Uniform Modality Dropout 0.15",
-    "training": "AdamW lr=2e-4, wd=0.02, cosine warmup 5ep, total 45ep, EMA 0.999, label_smooth=0.03"
+
+  "v12_best_results": {
+    "HateMM": {"ACC": 0.9302, "M-F1": 0.9280, "seed": 505042},
+    "EN_MHC": {"ACC": 0.8344, "M-F1": 0.8042, "seed": 501042},
+    "ZH_MHC": {"ACC": 0.8535, "M-F1": 0.8284, "seed": 530042}
   },
-  "pipeline": [
-    "1. AppraiseHate_v9.py: gpt-4.1-nano × 3 samples/video → appraise_v9_data.json",
-    "2. gen_v9_embeddings.py: BERT encode → v9_t1/t2/scores/struct .pth",
-    "3. gen_wavlm_features.py: WavLM encode audio → wavlm_audio_features.pth",
-    "4. main.py: AC-MHGF train + evaluate"
+
+  "current_step": "Running AppraiseHate_v13.py on HateMM (gpt-5.4-nano, 10 concurrent)",
+  "next_steps": [
+    "1. Wait for v13 LLM generation to complete on HateMM",
+    "2. Run gen_v13_embeddings.py to encode outputs",
+    "3. Run main_v13.py to train fusion + evaluate",
+    "4. Compare v13 vs v12 performance",
+    "5. If v13 ≥ v12: run on EN MHC and ZH MHC",
+    "6. If v13 < v12: iterate on prompt design",
+    "7. Run controlled baselines (Generic CoT, RAMF-style, etc.)",
+    "8. Update paper with new paradigm framing"
   ],
-  "active_files": {
-    "code": ["AppraiseHate_v9.py", "gen_v9_embeddings.py", "gen_wavlm_features.py", "main.py"],
-    "data": ["datasets/HateMM/appraise_v9_data.json"],
-    "embeddings": ["text_features.pth", "frame_features.pth", "wavlm_audio_features.pth", "v9_t1/t2/scores/struct"],
-    "docs": ["AUTO_REVIEW.md", "IDEA_REPORT.md", "PAPER_REGISTRY.md", "REVIEW_STATE.json"],
-    "reference": ["HVGuard.py", "CoT.py", "CoT_quad.py", "build_quad.py"],
-    "archived": "archive/ (all old prompt versions, experiment scripts, embeddings)"
+
+  "key_files": {
+    "v13_prompt": "AppraiseHate_v13.py",
+    "v13_embeddings": "gen_v13_embeddings.py",
+    "v13_training": "main_v13.py",
+    "v12_best_model_HateMM": "reproduce_results/HateMM/wCE1.5_off500000_best_model.pth",
+    "v12_best_model_EN": "reproduce_results/Multihateclip_English/wCE1.5_off500000_best_model.pth",
+    "v12_best_model_ZH": "reproduce_results/Multihateclip_Chinese/wCE1.5_off500000_best_model.pth"
+  },
+
+  "literature_landscape": {
+    "hateful_video_methods": ["HVGuard (EMNLP 2025)", "RAMF (arXiv 2025)", "MARS (arXiv 2026)", "MoRE (WWW 2025)", "Pro-Cap (ACM MM 2023)"],
+    "cv_paradigms_considered": ["Vad-R1 P2C-CoT (NeurIPS 2025)", "ARGUS Grounded CoT (CVPR 2025)", "Entailment Tree (CVPR 2025)", "AoTD Agent-of-Thoughts (CVPR 2025)", "Critic-V (CVPR 2025)", "VERA (CVPR 2025)", "TRACE Causal Events (ICLR 2025)"],
+    "theories_considered_and_rejected": ["CAT (too thin)", "Speech Act Theory", "van Dijk CDA", "Framing Theory", "Gricean Pragmatics"],
+    "chosen_paradigm": "Perception-to-Cognition (from Vad-R1, NeurIPS 2025)"
   }
 }

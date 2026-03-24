@@ -1,0 +1,64 @@
+
+==================================================
+  Transfer: HateMM->MHClip-Y
+  Ours:      ACC=0.6380 F1=0.5896 P=0.5878 R=0.5958
+  HVGuard:   ACC=0.6933 F1=0.4610 P=0.5668 R=0.5131
+  ImpliHate: ACC=0.5890 F1=0.5424 P=0.5438 R=0.5491
+
+==================================================
+  Transfer: HateMM->MHClip-B
+  Ours:      ACC=0.4968 F1=0.4967 P=0.6008 R=0.5983
+  HVGuard:   ACC=0.7006 F1=0.4317 P=0.6016 R=0.5061
+  ImpliHate: ACC=0.6115 F1=0.5501 P=0.5494 R=0.5521
+
+==================================================
+  Transfer: MHClip-Y->HateMM
+  Ours:      ACC=0.7442 F1=0.7077 P=0.7604 R=0.7016
+  HVGuard:   ACC=0.5953 F1=0.3732 P=0.2991 R=0.4961
+  ImpliHate: ACC=0.4977 F1=0.4823 P=0.4829 R=0.4826
+
+==================================================
+  Transfer: MHClip-Y->MHClip-B
+  Ours:      ACC=0.7643 F1=0.7099 P=0.7182 R=0.7039
+  HVGuard:   ACC=0.7006 F1=0.4120 P=0.3503 R=0.5000
+  ImpliHate: ACC=0.2739 F1=0.2261 P=0.2626 R=0.4453
+
+==================================================
+  Transfer: MHClip-B->HateMM
+  Ours:      ACC=0.7767 F1=0.7477 P=0.7970 R=0.7384
+  HVGuard:   ACC=0.6140 F1=0.5738 P=0.5876 R=0.5756
+  ImpliHate: ACC=0.4512 F1=0.3796 P=0.6719 R=0.5407
+
+==================================================
+  Transfer: MHClip-B->MHClip-Y
+  Ours:      ACC=0.7423 F1=0.6683 P=0.6902 R=0.6587
+  HVGuard:   ACC=0.6503 F1=0.4646 P=0.4872 R=0.4940
+  ImpliHate: ACC=0.3252 F1=0.2695 P=0.6541 R=0.5175
+
+Saved paper/figures/transferability_radar.pdf
+
+All transfer results:
+  HateMM->MHClip-Y:
+    Ours           : ACC=0.6380 F1=0.5896 P=0.5878 R=0.5958
+    HVGuard        : ACC=0.6933 F1=0.4610 P=0.5668 R=0.5131
+    ImpliHateVid   : ACC=0.5890 F1=0.5424 P=0.5438 R=0.5491
+  HateMM->MHClip-B:
+    Ours           : ACC=0.4968 F1=0.4967 P=0.6008 R=0.5983
+    HVGuard        : ACC=0.7006 F1=0.4317 P=0.6016 R=0.5061
+    ImpliHateVid   : ACC=0.6115 F1=0.5501 P=0.5494 R=0.5521
+  MHClip-Y->HateMM:
+    Ours           : ACC=0.7442 F1=0.7077 P=0.7604 R=0.7016
+    HVGuard        : ACC=0.5953 F1=0.3732 P=0.2991 R=0.4961
+    ImpliHateVid   : ACC=0.4977 F1=0.4823 P=0.4829 R=0.4826
+  MHClip-Y->MHClip-B:
+    Ours           : ACC=0.7643 F1=0.7099 P=0.7182 R=0.7039
+    HVGuard        : ACC=0.7006 F1=0.4120 P=0.3503 R=0.5000
+    ImpliHateVid   : ACC=0.2739 F1=0.2261 P=0.2626 R=0.4453
+  MHClip-B->HateMM:
+    Ours           : ACC=0.7767 F1=0.7477 P=0.7970 R=0.7384
+    HVGuard        : ACC=0.6140 F1=0.5738 P=0.5876 R=0.5756
+    ImpliHateVid   : ACC=0.4512 F1=0.3796 P=0.6719 R=0.5407
+  MHClip-B->MHClip-Y:
+    Ours           : ACC=0.7423 F1=0.6683 P=0.6902 R=0.6587
+    HVGuard        : ACC=0.6503 F1=0.4646 P=0.4872 R=0.4940
+    ImpliHateVid   : ACC=0.3252 F1=0.2695 P=0.6541 R=0.5175

@@ -168,14 +168,28 @@ async def process(data_path, save_path, quad_root, max_concurrent, logger, n_sam
     valid = sum(1 for d in data if is_valid(d))
     logger.info(f"Stats: {json.dumps(stats)}, Valid: {valid}/{len(data)}")
 
+def get_dataset_paths(dataset_name, language="English"):
+    if dataset_name == "HateMM":
+        return ("./datasets/HateMM/annotation(re).json",
+                "./datasets/HateMM/appraise_v9_data.json",
+                "./datasets/HateMM/quad")
+    elif dataset_name == "Multihateclip":
+        return (f"./datasets/Multihateclip/{language}/annotation(new).json",
+                f"./datasets/Multihateclip/{language}/appraise_v9_data.json",
+                f"./datasets/Multihateclip/{language}/quad")
+    else:
+        raise ValueError(f"Unknown dataset: {dataset_name}")
+
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset_name", type=str, default="HateMM", choices=["HateMM", "Multihateclip"])
+    parser.add_argument("--language", type=str, default="English", choices=["English", "Chinese"])
     parser.add_argument("--max_concurrent", type=int, default=10)
     parser.add_argument("--n_samples", type=int, default=3)
     args = parser.parse_args()
     logger = setup_logger()
-    asyncio.run(process("./datasets/HateMM/annotation(re).json", "./datasets/HateMM/appraise_v9_data.json",
-                        "./datasets/HateMM/quad", args.max_concurrent, logger, args.n_samples))
+    data_path, save_path, quad_root = get_dataset_paths(args.dataset_name, args.language)
+    asyncio.run(process(data_path, save_path, quad_root, args.max_concurrent, logger, args.n_samples))
     logger.info("Done.")
 
 if __name__ == "__main__":

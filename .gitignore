@@ -46,6 +46,21 @@ models/
 # CREMA repo (cloned dependency)
 CREMA/
 
+# User-requested local artifacts and large experiment outputs
+embeddings/HateMM/
+datasets/ImpliHateVid/
+datasets/HateMM/
+baselines/
+baseline_results/
+acl-style-files-master/
+paper/
+results_v13/
+reproduce_results/
+results_v13b/
+seed_search_v13/
+seed_search_v13_3class/
+transfer_results/
+
 # Python cache
 __pycache__/
 *.pyc

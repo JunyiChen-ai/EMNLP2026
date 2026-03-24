@@ -59,7 +59,11 @@ def process_dataset(json_path, vit_model, feature_extractor, save_path):
 
     for entry in dataset:
         video_id = entry['Video_ID']
-        frames_path = entry['Frames_path']
+        frames_path = entry.get('Frames_path', '')
+        # Fallback: derive from json path + Video_ID
+        if not frames_path or not os.path.exists(frames_path):
+            json_dir = os.path.dirname(json_path)
+            frames_path = os.path.join(json_dir, 'frames', video_id)
 
         if not os.path.exists(frames_path):
             print(

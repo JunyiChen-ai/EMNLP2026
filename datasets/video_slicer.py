@@ -1,82 +1,121 @@
+"""Extract frames from videos. Supports flat files and nested dirs ({vid}/video.ext).
+Uses OpenCV first, falls back to PyAV for webm/AV1 that OpenCV can't decode.
+"""
+import av
 import cv2
 import numpy as np
 import os
-import shutil
+import argparse
+from tqdm import tqdm
 
-# Extract frames from video datasets
-# Compute the indices of frames to extract
-def slice_frames(video_path, output_dir, num_frames=32):
-    print(f"Processing video: {video_path}")
-    video_name = os.path.splitext(os.path.basename(video_path))[0]
-    video_output_dir = os.path.join(output_dir, video_name)
 
-    if os.path.exists(video_output_dir):
-        print(f"Skipping {video_name}: Frames already extracted.")
-        return
-
-    os.makedirs(video_output_dir)
-
-    cap = cv2.VideoCapture(video_path, cv2.CAP_FFMPEG)
+def slice_frames_cv2(video_path, output_dir, num_frames=32):
+    """Extract frames using OpenCV."""
+    cap = cv2.VideoCapture(str(video_path), cv2.CAP_FFMPEG)
     if not cap.isOpened():
-        print(f"Error: Could not open video {video_path}")
-        return
-
+        return 0
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    print(f"Total frames: {total_frames}, FPS: {fps}")
-
+    if total_frames <= 0:
+        cap.release()
+        return 0
     if num_frames <= total_frames:
         seg_size = (total_frames - 1) / num_frames
         selected_ids = [int(np.round(seg_size * i)) for i in range(num_frames)]
     else:
-        selected_ids = list(range(total_frames)) * \
-            (num_frames // total_frames + 1)
+        selected_ids = list(range(total_frames)) * (num_frames // total_frames + 1)
         selected_ids = selected_ids[:num_frames]
-
-    print(f"Selected frame indices: {selected_ids}")
-
-    count = 0
-    saved_count = 0
+    count, saved = 0, 0
     while True:
         success, frame = cap.read()
         if not success:
             break
-
         if count in selected_ids:
-            image_name = f"frame_{saved_count + 1:03d}.jpg"
-            output_path = os.path.join(video_output_dir, image_name)
-            cv2.imwrite(output_path, frame)
-            print(f"Saved: {output_path}")
-            saved_count += 1
-
+            cv2.imwrite(os.path.join(output_dir, f"frame_{saved+1:03d}.jpg"), frame)
+            saved += 1
         count += 1
-
     cap.release()
-    print(f"Finished extracting {saved_count} frames.")
+    return saved
+
+
+def slice_frames_pyav(video_path, output_dir, num_frames=32):
+    """Extract frames using PyAV (handles webm/AV1)."""
+    try:
+        container = av.open(str(video_path))
+        stream = container.streams.video[0]
+        total_frames = stream.frames
+        if total_frames <= 0:
+            total_frames = sum(1 for _ in container.decode(video=0))
+            container.close()
+            container = av.open(str(video_path))
+        if total_frames <= 0:
+            container.close()
+            return 0
+        if num_frames <= total_frames:
+            seg_size = (total_frames - 1) / num_frames
+            selected_ids = set(int(np.round(seg_size * i)) for i in range(num_frames))
+        else:
+            selected_ids = set(range(total_frames))
+        saved = 0
+        for i, frame in enumerate(container.decode(video=0)):
+            if i in selected_ids:
+                frame.to_image().save(os.path.join(output_dir, f"frame_{saved+1:03d}.jpg"))
+                saved += 1
+                if saved >= num_frames:
+                    break
+        container.close()
+        return saved
+    except Exception as e:
+        print(f"  PyAV error on {video_path}: {e}")
+        return 0
+
+
+def find_video_file(folder):
+    """Find video file in a directory."""
+    video_extensions = {".mp4", ".webm", ".avi", ".mkv", ".mov"}
+    if os.path.isdir(folder):
+        for vname in ["video.mp4", "video.webm"]:
+            p = os.path.join(folder, vname)
+            if os.path.exists(p):
+                return p
+        for f in os.listdir(folder):
+            if os.path.splitext(f)[1].lower() in video_extensions:
+                return os.path.join(folder, f)
+    return None
+
 
 def process_folder(input_folder, output_folder, num_frames):
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+    os.makedirs(output_folder, exist_ok=True)
+    video_extensions = {".mp4", ".avi", ".mkv", ".mov", ".webm"}
 
-    video_extensions = {".mp4", ".avi", ".mkv", ".mov"}
-    for file_name in os.listdir(input_folder):
-        file_path = os.path.join(input_folder, file_name)
-        if os.path.isfile(file_path) and os.path.splitext(file_name)[1].lower() in video_extensions:
-            slice_frames(file_path, output_folder, num_frames)
+    # Collect all videos: flat files or nested dirs
+    videos = []
+    for entry in os.listdir(input_folder):
+        entry_path = os.path.join(input_folder, entry)
+        if os.path.isfile(entry_path) and os.path.splitext(entry)[1].lower() in video_extensions:
+            videos.append((os.path.splitext(entry)[0], entry_path))
+        elif os.path.isdir(entry_path):
+            vfile = find_video_file(entry_path)
+            if vfile:
+                videos.append((entry, vfile))
+
+    for vid_name, video_path in tqdm(videos, desc="Extracting frames"):
+        frames_dir = os.path.join(output_folder, vid_name)
+        if os.path.exists(frames_dir) and len([f for f in os.listdir(frames_dir) if f.endswith('.jpg')]) >= num_frames:
+            continue
+        os.makedirs(frames_dir, exist_ok=True)
+        # Try OpenCV first, fall back to PyAV
+        saved = slice_frames_cv2(video_path, frames_dir, num_frames)
+        if saved == 0:
+            saved = slice_frames_pyav(video_path, frames_dir, num_frames)
+        if saved == 0:
+            os.rmdir(frames_dir) if not os.listdir(frames_dir) else None
 
 
 def parse_args():
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Extract frames from videos in a folder.")
-    parser.add_argument("-i", "--input_folder", type=str, required=True,
-                        help="Path to the input folder containing videos.")
-    parser.add_argument("-o", "--output_folder", type=str,
-                        default="frames", help="Path to the output folder.")
-    parser.add_argument("--num_frames", type=int, default=2,
-                        help="Number of frames to extract per video.")
-
+    parser = argparse.ArgumentParser(description="Extract frames from videos.")
+    parser.add_argument("-i", "--input_folder", type=str, required=True)
+    parser.add_argument("-o", "--output_folder", type=str, default="frames")
+    parser.add_argument("--num_frames", type=int, default=32)
     return parser.parse_args()
 
 
