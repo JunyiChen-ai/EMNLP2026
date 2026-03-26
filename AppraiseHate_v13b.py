@@ -236,6 +236,10 @@ def get_dataset_paths(dataset_name, language="English"):
         return ("./datasets/HateMM/annotation(new).json",
                 "./datasets/HateMM/appraise_v13b_data.json",
                 "./datasets/HateMM/quad")
+    elif dataset_name == "ImpliHateVid":
+        return ("./datasets/ImpliHateVid/annotation(new).json",
+                "./datasets/ImpliHateVid/appraise_v13b_data.json",
+                "./datasets/ImpliHateVid/quad")
     else:
         return (f"./datasets/Multihateclip/{language}/annotation(new).json",
                 f"./datasets/Multihateclip/{language}/appraise_v13b_data.json",
@@ -309,7 +313,7 @@ async def process(data_path, save_path, quad_root, max_concurrent, logger):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_name", type=str, default="HateMM", choices=["HateMM", "Multihateclip"])
+    parser.add_argument("--dataset_name", type=str, default="HateMM", choices=["HateMM", "Multihateclip", "ImpliHateVid"])
     parser.add_argument("--language", type=str, default="English", choices=["English", "Chinese"])
     parser.add_argument("--max_concurrent", type=int, default=10)
     args = parser.parse_args()

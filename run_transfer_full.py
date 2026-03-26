@@ -261,6 +261,11 @@ def load_dataset(ds_name, base):
         ann_path=f"{base}/datasets/Multihateclip/Chinese/annotation(new).json"
         split_dir=f"{base}/datasets/Multihateclip/Chinese/splits"
         lm={"Normal":0,"Offensive":1,"Hateful":1};ver="v13b"
+    elif ds_name=="ImpliHateVid":
+        emb_dir=f"{base}/embeddings/ImpliHateVid"
+        ann_path=f"{base}/datasets/ImpliHateVid/annotation(new).json"
+        split_dir=f"{base}/datasets/ImpliHateVid/splits"
+        lm={"Normal":0,"Hateful":1};ver="v13b"
     feats={"text":torch.load(f"{emb_dir}/text_features.pth",map_location="cpu"),
            "audio":torch.load(f"{emb_dir}/wavlm_audio_features.pth",map_location="cpu"),
            "frame":torch.load(f"{emb_dir}/frame_features.pth",map_location="cpu")}
@@ -272,8 +277,8 @@ def load_dataset(ds_name, base):
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument("--src",required=True,choices=["HateMM","MHClip-Y","MHClip-B"])
-    parser.add_argument("--tgt",required=True,choices=["HateMM","MHClip-Y","MHClip-B"])
+    parser.add_argument("--src",required=True,choices=["HateMM","MHClip-Y","MHClip-B","ImpliHateVid"])
+    parser.add_argument("--tgt",required=True,choices=["HateMM","MHClip-Y","MHClip-B","ImpliHateVid"])
     parser.add_argument("--num_seeds",type=int,default=50)
     parser.add_argument("--seed_offset",type=int,default=0)
     args=parser.parse_args()

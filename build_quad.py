@@ -11,6 +11,7 @@ DEFAULT_DATASETS = [
     "datasets/HateMM",
     "datasets/Multihateclip/Chinese",
     "datasets/Multihateclip/English",
+    "datasets/ImpliHateVid",
 ]
 
 

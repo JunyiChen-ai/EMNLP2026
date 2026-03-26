@@ -12,7 +12,7 @@ MODEL_NAME = "microsoft/wavlm-base-plus"
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_name", type=str, default="HateMM", choices=["HateMM", "Multihateclip"])
+    parser.add_argument("--dataset_name", type=str, default="HateMM", choices=["HateMM", "Multihateclip", "ImpliHateVid"])
     parser.add_argument("--language", type=str, default="English", choices=["English", "Chinese"])
     args = parser.parse_args()
 
@@ -20,6 +20,10 @@ def main():
         audio_dir = "./datasets/HateMM/audios"
         ann_path = "./datasets/HateMM/annotation(re).json"
         out_path = "./embeddings/HateMM/wavlm_audio_features.pth"
+    elif args.dataset_name == "ImpliHateVid":
+        audio_dir = "./datasets/ImpliHateVid/audios"
+        ann_path = "./datasets/ImpliHateVid/annotation(new).json"
+        out_path = "./embeddings/ImpliHateVid/wavlm_audio_features.pth"
     else:
         audio_dir = f"./datasets/Multihateclip/{args.language}/audios"
         ann_path = f"./datasets/Multihateclip/{args.language}/annotation(new).json"

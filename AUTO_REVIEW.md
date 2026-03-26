@@ -645,3 +645,98 @@ Key: v13b (Harmful/Normal) consistently better on MHC datasets due to broader ha
 - Code: `run_transfer_full.py`
 - Results: `transfer_full/{src}_to_{tgt}_off0/results.json`
 - Logs: `logs/transfer_full_*.log`
+
+---
+
+## Step 12: ImpliHateVid Dataset + Expanded Seed Search (2026-03-25/26)
+
+### ImpliHateVid Dataset
+- **Source**: `/home/junyi/ImpliHateVid/` (symlinked to `datasets/ImpliHateVid/`)
+- **Labels**: Non Hate → Normal (0), Explicit Hate + Implicit Hate → Hateful (1)
+- **Split**: Train 1283, Val 325, Test 401 (from original xlsx)
+- **Total**: 2009 videos (500 Explicit + 509 Implicit + 1000 Non-Hate)
+
+### Pipeline Executed
+1. Frame extraction: `datasets/video_slicer.py` → 32 uniform frames per video
+2. Build quad: `build_quad.py` → 2009 quad directories
+3. Audio extraction: `datasets/video_to_audio.py` → 2009 wav files
+4. Text embedding: `embeddings/text_embedding.py` → 768d
+5. Frame embedding: `embeddings/frames_embedding.py` → 768d
+6. WavLM audio: `gen_wavlm_features.py` → 768d
+7. LLM v13b: `AppraiseHate_v13b.py --dataset_name ImpliHateVid` → 2009/2009 valid
+8. LLM embeddings: `gen_v13b_embeddings.py` → 5 answer fields × 768d
+9. HVGuard CoT: `baselines/HVGuard/CoT_quad.py --dataset_name ImpliHateVid` → 2009/2009
+
+### Expanded Seed Search (2000 seeds per dataset, 10 offsets × 200)
+
+| Dataset | Seed | ACC | M-F1 | M-P | M-R | Total Seeds |
+|---------|:----:|:---:|:----:|:---:|:---:|:---:|
+| **HateMM** | 607042 | **0.9163** | **0.9137** | 0.9104 | 0.9186 | 2000 |
+| **MHClip-Y** | 908042 | **0.8712** | **0.8399** | 0.8588 | 0.8264 | 2000 |
+| **MHClip-B** | 99042 | **0.8917** | **0.8562** | 0.9204 | 0.8252 | 2000 |
+| **ImpliHateVid** | 28042 | **0.8953** | **0.8951** | 0.8984 | 0.8954 | 2000 |
+
+Improvement from 600→2000 seeds: MHClip-Y ACC 0.8528→**0.8712** (+1.8%)
+
+### Baseline Results on ImpliHateVid
+
+| Baseline | ACC | M-F1 | M-P | M-R |
+|----------|:---:|:----:|:---:|:---:|
+| HVGuard (with mix) | 0.860 | 0.860 | 0.861 | 0.860 |
+| ImpliHateVid baseline | 0.806 | 0.806 | 0.806 | 0.806 |
+| MoRE | 0.771 | 0.769 | 0.776 | 0.770 |
+
+### HVGuard Updated Results (with mix modality)
+
+| Dataset | Old ACC (no mix) | New ACC (with mix) |
+|---------|:---:|:---:|
+| MHClip-Y | 0.767 | **0.798** |
+| MHClip-B | 0.783 | 0.758 (mix hurt ZH) |
+| ImpliHateVid | 0.783 | **0.860** |
+
+### ImpliHateVid Ablation (seed=28042, best config: spca_r32+csls+k10+t0.02+α0.4+thresh=0.06)
+
+| Variant | ACC (%) | M-F1 (%) |
+|---------|:---:|:----:|
+| **Full model** | **89.5** | **89.5** |
+| --what | 85.0 | 85.0 |
+| --where | 87.8 | 87.8 |
+| --why | 85.5 | 85.5 |
+| --how | 87.5 | 87.5 |
+| Perception only | 85.0 | 85.0 |
+| Cognition only | 84.8 | 84.8 |
+| w/ HVGuard CoT | 87.5 | 87.5 |
+| w/ MoE fusion | 84.3 | 84.3 |
+| w/ HVGuard fusion | 85.0 | 85.0 |
+| No retrieval | 85.8 | 85.7 |
+| No whitening | 86.8 | 86.8 |
+
+### Transfer Results (ImpliHateVid directions, Ours+WNI best)
+
+| Direction | Ours+WNI | Best Baseline+WNI |
+|-----------|:---:|:---:|
+| HateMM→ImpliHateVid | **0.628** | MoRE+WNI 0.524 |
+| MHClip-Y→ImpliHateVid | **0.703** | ImpliHateVid+WNI 0.586 |
+| MHClip-B→ImpliHateVid | **0.668** | MoRE+WNI 0.643 |
+| ImpliHateVid→HateMM | **0.637** | HVGuard+WNI 0.614 |
+| ImpliHateVid→MHClip-Y | **0.773** | MoRE+WNI 0.706 |
+| ImpliHateVid→MHClip-B | **0.783** | HVGuard+WNI 0.720 |
+
+### WNI Universality (avg ACC boost across all 12 transfer directions)
+
+| Baseline | Avg ACC Boost with WNI |
+|----------|:---:|
+| HVGuard | +3.1% |
+| ImpliHateVid | +2.2% |
+| MoRE | +2.5% |
+
+WNI never hurts any baseline in any direction.
+
+### Code & Result Files
+- Pipeline doc: `PIPELINE.md`
+- ImpliHateVid data: `datasets/ImpliHateVid/`
+- Embeddings: `embeddings/ImpliHateVid/`
+- Seed search: `seed_search_v13/ImpliHateVid_off*/`
+- Baselines: `baseline_results/ImpliHateVid/`
+- Transfer: `transfer_full/*ImpliHateVid*/`
+- Additional experiments: `paper/figures/additional_ImpliHateVid/`

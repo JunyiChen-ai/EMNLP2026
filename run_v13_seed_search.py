@@ -314,7 +314,7 @@ def run(feats, splits, lm, mk, nc, num_runs, seed_offset, class_weight, save_dir
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_name", default="HateMM", choices=["HateMM", "Multihateclip"])
+    parser.add_argument("--dataset_name", default="HateMM", choices=["HateMM", "Multihateclip", "ImpliHateVid"])
     parser.add_argument("--language", default="English", choices=["English", "Chinese"])
     parser.add_argument("--num_runs", type=int, default=200)
     parser.add_argument("--seed_offset", type=int, default=0)
@@ -327,6 +327,13 @@ def main():
         lm = {"Non Hate": 0, "Hate": 1}
         ver = "v13"  # HateMM uses v13
         tag = "HateMM"
+    elif args.dataset_name == "ImpliHateVid":
+        emb_dir = "./embeddings/ImpliHateVid"
+        ann_path = "./datasets/ImpliHateVid/annotation(new).json"
+        split_dir = "./datasets/ImpliHateVid/splits"
+        lm = {"Normal": 0, "Hateful": 1}
+        ver = "v13b"
+        tag = "ImpliHateVid"
     else:
         emb_dir = f"./embeddings/Multihateclip/{args.language}"
         ann_path = f"./datasets/Multihateclip/{args.language}/annotation(new).json"

@@ -25,13 +25,16 @@ def encode_texts(texts, tokenizer, model, max_length=256):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_name", default="HateMM", choices=["HateMM", "Multihateclip"])
+    parser.add_argument("--dataset_name", default="HateMM", choices=["HateMM", "Multihateclip", "ImpliHateVid"])
     parser.add_argument("--language", default="English")
     args = parser.parse_args()
 
     if args.dataset_name == "HateMM":
         data_path = "./datasets/HateMM/appraise_v13b_data.json"
         out_dir = "./embeddings/HateMM"
+    elif args.dataset_name == "ImpliHateVid":
+        data_path = "./datasets/ImpliHateVid/appraise_v13b_data.json"
+        out_dir = "./embeddings/ImpliHateVid"
     else:
         data_path = f"./datasets/Multihateclip/{args.language}/appraise_v13b_data.json"
         out_dir = f"./embeddings/Multihateclip/{args.language}"

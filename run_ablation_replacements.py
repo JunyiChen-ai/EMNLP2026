@@ -210,6 +210,9 @@ def main():
         ("MHClip-B", 99042, "v13b",
          f"{base}/embeddings/Multihateclip/Chinese", f"{base}/datasets/Multihateclip/Chinese/annotation(new).json",
          f"{base}/datasets/Multihateclip/Chinese/splits", {"Normal":0,"Offensive":1,"Hateful":1}, 0.1),
+        ("ImpliHateVid", 28042, "v13b",
+         f"{base}/embeddings/ImpliHateVid", f"{base}/datasets/ImpliHateVid/annotation(new).json",
+         f"{base}/datasets/ImpliHateVid/splits", {"Normal":0,"Hateful":1}, 0.4),
     ]
 
     mk_ours = ["text","audio","frame","ans_what","ans_target","ans_where","ans_why","ans_how"]
